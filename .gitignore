@@ -21,3 +21,8 @@ pnpm-debug.log*
 
 # misc
 *.tsbuildinfo
+
+node_modules
+.next
+out
+.DS_Store
