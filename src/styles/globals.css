@@ -5,3 +5,41 @@
 body {
   background: #f9fafb;
 }
+
+@keyframes amigojo-shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+  100% { transform: translateX(0); }
+}
+
+.amigojo-shake {
+  animation: amigojo-shake 360ms ease-in-out;
+}
+
+@keyframes amigojo-breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.02); }
+}
+.amigojo-breathe { animation: amigojo-breathe 2.6s ease-in-out infinite; }
+
+@keyframes amigojo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(10px); }
+}
+.amigojo-float { animation: amigojo-float 5.5s ease-in-out infinite; }
+
+@keyframes amigojo-float2 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.amigojo-float2 { animation: amigojo-float2 6.5s ease-in-out infinite; }
+
+@keyframes amigojo-popbtn {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.amigojo-popbtn { animation: amigojo-popbtn 1.8s ease-in-out infinite; }

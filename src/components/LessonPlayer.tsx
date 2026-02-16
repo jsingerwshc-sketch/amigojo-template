@@ -1,37 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { findLesson, Item, Theme } from "../lib/course";
+import ThemeFrame from "./ThemeFrame";
+import MascotBubble from "./MascotBubble";
+import { addXp, markCompleted } from "../lib/progress";
 
-type Item =
-  | { type: "multiple_choice"; prompt: string; answer: string; choices: string[]; tip?: string }
-  | { type: "fill_blank"; prompt: string; answer: string; tip?: string };
+export default function LessonPlayer({ lessonId }: { lessonId: string }) {
+  const lesson = useMemo(() => findLesson(lessonId), [lessonId]);
 
-const lessonData: Item[] = [
-  { type: "multiple_choice", prompt: 'Translate: "Hello"', answer: "Hola", choices: ["Hola", "Adiós", "Gracias"], tip: "“Hola” is “Hello/Hi”." },
-  { type: "multiple_choice", prompt: 'Translate: "Goodbye"', answer: "Adiós", choices: ["Por favor", "Adiós", "Buenos días"], tip: "“Adiós” is “Goodbye”." },
-  { type: "fill_blank", prompt: 'Type: "Good morning"', answer: "Buenos días", tip: "Two words: buenos + días." }
-];
-
-export default function LessonPlayer() {
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState("");
   const [checked, setChecked] = useState<null | { correct: boolean; message: string }>(null);
   const [xp, setXp] = useState(0);
 
-  const item = lessonData[index];
+  const items: Item[] = lesson?.items ?? [];
+  const item = items[index];
 
-  function normalize(s: string) {
-    return s.trim().toLowerCase();
-  }
+  const normalize = (s: string) => s.trim().toLowerCase();
 
   function check(answer: string) {
+    if (!item) return;
     const correct = normalize(answer) === normalize(item.answer);
-    setChecked({
-      correct,
-      message: correct ? "Correct! 🎉" : `Not quite. Correct answer: ${item.answer}`,
-    });
-    setXp((prev) => prev + (correct ? 10 : 0));
+
+    if (correct) {
+      addXp(10);
+      setXp((prev) => prev + 10);
+      setChecked({ correct: true, message: "Correct! +10 XP" });
+    } else {
+      setChecked({ correct: false, message: `Not quite. Correct answer: ${item.answer}` });
+    }
   }
 
   function next() {
@@ -40,29 +39,55 @@ export default function LessonPlayer() {
     setIndex((i) => i + 1);
   }
 
-  if (!item) {
+  if (!lesson) {
     return (
       <div className="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow">
-        <h2 className="text-2xl font-bold mb-2">Lesson complete! ✅</h2>
-        <p className="text-gray-700 mb-4">XP earned: <span className="font-semibold">{xp}</span></p>
-        <Link href="/" className="inline-block bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl">
+        <h2 className="text-2xl font-bold mb-2">Lesson not found</h2>
+        <Link href="/" className="inline-block mt-3 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl">
           Back to Path
         </Link>
       </div>
     );
   }
 
+  if (!item) {
+    markCompleted(lessonId);
+    return (
+      <ThemeFrame theme={lesson.theme}>
+        <h2 className="text-2xl font-bold mb-2">Lesson complete! ✅</h2>
+        <p className="text-gray-700 mb-4">
+          XP earned this lesson: <span className="font-semibold">{xp}</span>
+        </p>
+        <Link href="/" className="inline-block bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl">
+          Back to Path
+        </Link>
+      </ThemeFrame>
+    );
+  }
+
+  const mascotState = checked ? (checked.correct ? "correct" : "wrong") : "idle";
+  const mascotMessage =
+    mascotState === "idle"
+      ? "Pick an answer (or type it) — you got this!"
+      : checked?.message || "";
+
   return (
-    <div className="max-w-lg mx-auto bg-white p-6 rounded-2xl shadow flex flex-col gap-4">
+    <ThemeFrame theme={lesson.theme}>
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Lesson 1</h2>
-        <div className="text-sm text-gray-600">XP: <span className="font-semibold">{xp}</span></div>
+        <h2 className="text-xl font-semibold">{lesson.title}</h2>
+        <div className="text-sm text-gray-600">
+          XP: <span className="font-semibold">{xp}</span>
+        </div>
       </div>
 
-      <p className="text-lg">{item.prompt}</p>
+      <div className="mt-4">
+        <MascotBubble theme={lesson.theme as Theme} state={mascotState} message={mascotMessage} />
+      </div>
+
+      <p className="text-lg mt-4">{item.prompt}</p>
 
       {item.type === "multiple_choice" ? (
-        <div className="grid gap-2">
+        <div className="grid gap-2 mt-4">
           {item.choices.map((c) => (
             <button
               key={c}
@@ -75,7 +100,7 @@ export default function LessonPlayer() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-4">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -94,7 +119,7 @@ export default function LessonPlayer() {
       )}
 
       {checked && (
-        <div className={`p-3 rounded-xl ${checked.correct ? "bg-green-50" : "bg-red-50"}`}>
+        <div className={`p-3 rounded-xl mt-4 ${checked.correct ? "bg-green-50" : "bg-red-50"}`}>
           <p className="font-semibold">{checked.message}</p>
           {"tip" in item && item.tip ? <p className="text-sm text-gray-700 mt-1">{item.tip}</p> : null}
           <button
@@ -105,6 +130,6 @@ export default function LessonPlayer() {
           </button>
         </div>
       )}
-    </div>
+    </ThemeFrame>
   );
 }
